@@ -8,7 +8,7 @@ router.post("/get_best", (req, res) => {
 		SELECT 
 			outcome, 
 			MAX(price) as price, 
-			SUM(shares - shares_filled) as depth
+			SUM((spend - filled) / price) as depth
 		FROM orders
 		WHERE market_id = $1 AND orders.closed = false
 		GROUP BY outcome;
@@ -32,8 +32,8 @@ router.post("/get", (req, res) => {
 	const query = `
 		SELECT 
 			outcome, 
-			price as price, 
-			SUM(shares - shares_filled) as depth
+			price, 
+			SUM((spend - filled) / price) as depth
 		FROM orders
 		WHERE market_id = $1 AND orders.closed = false
 		GROUP BY outcome, price

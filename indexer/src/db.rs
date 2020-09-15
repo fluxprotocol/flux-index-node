@@ -130,6 +130,7 @@ pub async fn add_claimed_market(pool: &Pool<ConnectionManager<PgConnection>>, pa
 
     diesel::insert_into(schema::claimed_markets::table)
         .values(claimed_market)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert claimed market");
@@ -142,6 +143,7 @@ pub async fn add_stake(pool: &Pool<ConnectionManager<PgConnection>>, params: &Va
 
     diesel::insert_into(schema::account_stake_in_outcomes::table)
         .values(stake)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert staake");
@@ -155,6 +157,7 @@ pub async fn add_resolution_window(pool: &Pool<ConnectionManager<PgConnection>>,
 
     diesel::insert_into(schema::resolution_windows::table)
         .values(resolution_window)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert resolution_window");
@@ -167,6 +170,7 @@ pub async fn add_market(pool: &Pool<ConnectionManager<PgConnection>>, params: &V
 
     diesel::insert_into(schema::markets::table)
         .values(market)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert into markets");
@@ -256,6 +260,7 @@ pub async fn add_order(pool: &Pool<ConnectionManager<PgConnection>>, params: &Va
 
     diesel::insert_into(schema::orders::table)
         .values(order)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert into orders");
@@ -266,6 +271,7 @@ pub async fn add_fill(pool: &Pool<ConnectionManager<PgConnection>>, params: &Val
 
     diesel::insert_into(schema::fills::table)
         .values(fill)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert into fills");
@@ -319,6 +325,7 @@ pub async fn add_to_claimable_if_valid(pool: &Pool<ConnectionManager<PgConnectio
 
     diesel::insert_into(schema::claimable_if_valids::table)
         .values(claimable_if_valid)
+        .on_conflict_do_nothing()
         .execute_async(pool)
         .await
         .expect("something went wrong while trying to insert into markets");

@@ -15,20 +15,13 @@ const earnings = require("./api/earnings");
 
 const app = express()
 var http = require('http').createServer(app);
-var io = require('socket.io')(http);
+const io = require('socket.io')(http);
 
 app.use(compression())
 app.use(helmet())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
-app.use(cors({credentials: true, origin: "*"}))
-
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header('Access-Control-Allow-Methods', 'DELETE, PUT, GET, POST, OPTION');
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
+app.use(cors({credentials: true, origin: "*"}));
 
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
@@ -70,21 +63,18 @@ app.use("/earnings", (req, res, next) => {
   next();
 }, earnings);
 
-(async function connectListener() {
+async function connectListener() {
   await listener.connect()
-  await client.query('LISTEN update_orders');
+  await listener.query('LISTEN update_orders');
   // await client.query('LISTEN update_markets');
 
-  console.log("starting wss")
-
-  io.on('connect', socket => {
-    console.log("new ws connection");
-    db.on("notification", message => {
-      handleDBEvent(socket, message);
-    })
+  listener.on("notification", message => {
+    console.log("notified")
+    handleDBEvent(io, message);
   })
-})()
+}
 
+connectListener()
 
 http.listen(process.env.PORT || 3000, () => {
   console.log(`Server listening`)

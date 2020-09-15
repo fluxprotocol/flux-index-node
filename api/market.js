@@ -162,6 +162,7 @@ router.post("/get_share_balances_for_user", (req, res) => {
 			(spent / balance) avg_price_per_share
 		FROM account_share_balances
 		WHERE account_id = $1 AND market_id = $2
+		AND balance > 0;
 	`;
 
 	const values = [body.accountId, body.marketId]
