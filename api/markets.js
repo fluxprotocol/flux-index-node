@@ -41,7 +41,7 @@ router.post("/get", async (req, res) => {
 		WHERE markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000) ${whereString && whereString};
 	`;
 
-	pool.query(totalQuery, [], (error, results) => {
+	pool.query(totalQuery, categoryValues, (error, results) => {
 		if (error) {
 			console.error(error)
 			return res.status(404).json(error)
@@ -212,7 +212,7 @@ router.post("/get_resoluting", async (req, res) => {
 		WHERE markets.end_date_time <= to_timestamp(${new Date().getTime()} / 1000);
 	`;
 
-	pool.query(totalQuery, [], (error, results) => {
+	pool.query(totalQuery, categoryValues, (error, results) => {
 		if (error) {
 			console.error(error)
 			return res.status(404).json(error)

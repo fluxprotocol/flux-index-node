@@ -28,7 +28,7 @@ router.post("/get_open_orders", (req, res) => {
 	const {pool, body} = req;
 
 	const query = `
-		SELECT orders.*, extract(epoch from orders.creation_time) as creation_time
+		SELECT orders.*, markets.outcome_tags, extract(epoch from orders.creation_time) as creation_time
 		FROM orders
 		LEFT JOIN markets
 		ON orders.market_id = markets.id
@@ -51,9 +51,11 @@ router.post("/get_order_history", (req, res) => {
 	const {pool, body} = req;
 
 	const query = `
-		SELECT *, extract(epoch from orders.creation_time) as creation_time
+		SELECT orders.*, markets.outcome_tags ,extract(epoch from orders.creation_time) as creation_time
 		FROM orders
-		WHERE creator = $1 AND orders.closed = true;
+		LEFT JOIN markets
+		ON orders.market_id = markets.id
+		WHERE orders.creator = $1 AND (orders.closed = true OR markets.end_date_time < to_timestamp(${new Date().getTime()} / 1000));
 	`;
 	const values = [body.accountId]
 
