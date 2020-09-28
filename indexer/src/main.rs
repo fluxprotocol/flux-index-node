@@ -1,10 +1,12 @@
+use actix;
+use clap::Clap;
+
+
 #[macro_use]
 extern crate diesel;
 
 use std::env;
 use std::io;
-use actix;
-use clap::derive::Clap;
 use tokio::sync::mpsc;
 use tracing_subscriber::EnvFilter;
 
@@ -47,15 +49,10 @@ async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>
 }
 
 fn main() {
+    // We use it to automatically search the for root certificates to perform HTTPS calls
+    // (sending telemetry and downloading genesis)
     openssl_probe::init_ssl_cert_env_vars();
-
-    let env_filter = EnvFilter::new(
-        "tokio_reactor=info,near=info,near=error,stats=info,telemetry=info,indexer_for_wallet=info",
-    );
-    tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(env_filter)
-        .with_writer(std::io::stderr)
-        .init();
+    init_logging();
 
     let opts: Opts = Opts::parse();
 

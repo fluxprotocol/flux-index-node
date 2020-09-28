@@ -18,8 +18,6 @@ mod schema;
 mod structs;
 
 pub fn continue_if_valid_flux_receipt(execution_outcome_with_id: ExecutionOutcomeWithIdView) -> Option<ExecutionOutcomeView> {
-
-    
     if execution_outcome_with_id.outcome.executor_id != "u1f92b_u1f680.flux-dev" {return None}
 
     let res: Option<&String> = match &execution_outcome_with_id.outcome.status {
