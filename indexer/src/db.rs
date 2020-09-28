@@ -17,7 +17,7 @@ use tokio_diesel::*;
 mod schema;
 mod structs;
 
-pub fn continue_if_valid_flux_receipt(outcome: Outcome) -> Option<ExecutionOutcomeWithIdView> {
+pub fn continue_if_valid_flux_receipt(outcome: HashMap<CryptoHash, ExecutionOutcomeWithId>) -> Option<ExecutionOutcomeWithIdView> {
 
     let receipt: ExecutionOutcomeWithIdView = match outcome {
         Outcome::Receipt(outcome) => outcome,
@@ -178,11 +178,16 @@ pub async fn add_market(pool: &Pool<ConnectionManager<PgConnection>>, params: &V
 
 pub async fn set_resolute_market(pool: &Pool<ConnectionManager<PgConnection>>, params: &Value) {
     let market_id = structs::val_to_i64(&params["market_id"]);
+    let outcome = structs::val_to_i16(&params["outcome"]);
+    
     diesel::update(
         schema::markets::table
             .filter(schema::markets::dsl::id.eq(market_id))
     )
-    .set(schema::markets::dsl::resoluted.eq(true))
+    .set((
+        schema::markets::dsl::resoluted.eq(true),
+        schema::markets::dsl::winning_outcome.eq(outcome)
+    ))
     .execute_async(pool)
     .await
     .expect("updated market resolute failed");
@@ -226,11 +231,16 @@ pub async fn update_user_balance(pool: &Pool<ConnectionManager<PgConnection>>, p
 
 pub async fn set_dispute_market(pool: &Pool<ConnectionManager<PgConnection>>, params: &Value) {
     let market_id = structs::val_to_i64(&params["market_id"]);
+    let outcome = structs::val_to_i16(&params["outcome"]);
+
     diesel::update(
         schema::markets::table
             .filter(schema::markets::dsl::id.eq(market_id))
     )
-    .set(schema::markets::dsl::disputed.eq(true))
+    .set((
+        schema::markets::dsl::disputed.eq(true),
+        schema::markets::dsl::winning_outcome.eq(outcome)
+    ))
     .execute_async(pool)
     .await
     .expect("updated market resolute failed");

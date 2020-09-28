@@ -37,7 +37,7 @@ async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>
 
     while let Some(block) = stream.recv().await {
         eprintln!("Block height {:?}", block.block.header.height);
-        for outcome in block.outcomes {
+        for outcome in block.receipt_execution_outcomes {
 
             let receipt = db::continue_if_valid_flux_receipt(outcome);
             if receipt.is_none() { continue; }

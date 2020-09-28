@@ -21,7 +21,7 @@ router.post("/get", async (req, res) => {
 
 	const query = `
 		SELECT 
-			SUM(orders.filled) as volume,
+			COALESCE(SUM(orders.filled), 0)  as volume,
 			markets.*,
 			extract(epoch from markets.creation_date) as creation_timestamp,
 			extract(epoch from markets.end_date_time) as end_timestamp
@@ -30,10 +30,10 @@ router.post("/get", async (req, res) => {
 		ON markets.id = orders.market_id 
 		WHERE markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000) ${whereString && whereString}
 		GROUP BY markets.id
-		ORDER BY volume
-		${limitString} ${offsetString}
-		;
+		ORDER BY volume DESC, markets.id ASC
+		${limitString} ${offsetString};
 	`;
+
 	const totalQuery = `
 		SELECT 
 			COUNT(*) total_markets
@@ -184,14 +184,15 @@ router.post("/get_resoluting", async (req, res) => {
 			markets.*,
 			extract(epoch from markets.creation_date) as creation_timestamp,
 			extract(epoch from markets.end_date_time) as end_timestamp,
-			res_win.resolution_state,
-			res_win.resolution_round_end_time
+			MAX(res_win.resolution_state) + 1 as resolution_state,
+			MAX(res_win.resolution_round_end_time) as resolution_round_end_time
 		FROM markets
 		JOIN (
 			SELECT 
 				MAX(resolution_windows.round) AS resolution_state, 
 				resolution_windows.end_time AS resolution_round_end_time,
-				resolution_windows.market_id
+				resolution_windows.market_id,
+				MAX(resolution_windows.outcome) AS temp_winning_outcome
 			FROM resolution_windows
 			GROUP BY resolution_windows.end_time, resolution_windows.market_id
 		) res_win
@@ -199,8 +200,8 @@ router.post("/get_resoluting", async (req, res) => {
 		LEFT JOIN orders 
 		ON markets.id = orders.market_id
 		WHERE markets.end_date_time <= to_timestamp(${new Date().getTime()} / 1000) AND markets.finalized = false
-		GROUP BY markets.id, res_win.resolution_state, res_win.resolution_round_end_time
-		ORDER BY volume
+		GROUP BY markets.id
+		ORDER BY resolution_state DESC, volume DESC, markets.id ASC
 		${limitString}
 		${offsetString};
 	`;
@@ -212,7 +213,7 @@ router.post("/get_resoluting", async (req, res) => {
 		WHERE markets.end_date_time <= to_timestamp(${new Date().getTime()} / 1000);
 	`;
 
-	pool.query(totalQuery, categoryValues, (error, results) => {
+	pool.query(totalQuery, [], (error, results) => {
 		if (error) {
 			console.error(error)
 			return res.status(404).json(error)
@@ -244,7 +245,7 @@ router.post("/get_resolution_state", async (req, res) => {
 	const query = `
 		SELECT 
 			markets.id as market_id,
-			SUM(orders.filled) as volume,
+			COALESCE(SUM(orders.filled), 0) as volume,
 			total_stake_in_outcomes.outcome,
 			MAX(total_stake_in_outcomes.round) max_round
 		FROM markets
