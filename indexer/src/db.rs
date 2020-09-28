@@ -1,7 +1,7 @@
 use near_indexer::near_primitives::{
-    views::{ExecutionOutcomeWithIdView, ExecutionStatusView},
+    views::{ExecutionOutcomeWithIdView, ExecutionStatusView, ExecutionOutcomeView},
 };
-use near_indexer::Outcome;
+
 use serde_json::{Result, Value};
 
 use bigdecimal::BigDecimal;
@@ -17,28 +17,23 @@ use tokio_diesel::*;
 mod schema;
 mod structs;
 
-pub fn continue_if_valid_flux_receipt(outcome: HashMap<CryptoHash, ExecutionOutcomeWithId>) -> Option<ExecutionOutcomeWithIdView> {
+pub fn continue_if_valid_flux_receipt(execution_outcome_with_id: ExecutionOutcomeWithIdView) -> Option<ExecutionOutcomeView> {
 
-    let receipt: ExecutionOutcomeWithIdView = match outcome {
-        Outcome::Receipt(outcome) => outcome,
-        _ => return None
-    };
     
-    if receipt.outcome.executor_id != "u1f92b_u1f680.flux-dev" {return None}
+    if execution_outcome_with_id.outcome.executor_id != "u1f92b_u1f680.flux-dev" {return None}
 
-    let res: Option<&String> = match &receipt.outcome.status {
+    let res: Option<&String> = match &execution_outcome_with_id.outcome.status {
         ExecutionStatusView::SuccessValue(res) => Some(res),
         ExecutionStatusView::SuccessReceiptId(receipt_id) => None,
         _ => return None
     };
 
-    return Some(receipt);
-        
+    return Some(execution_outcome_with_id.outcome);
 }
 
-pub async fn process_logs(pool: &Pool<ConnectionManager<PgConnection>>, receipt: ExecutionOutcomeWithIdView) -> Result<()> {
+pub async fn process_logs(pool: &Pool<ConnectionManager<PgConnection>>, outcome: ExecutionOutcomeView) -> Result<()> {
     
-    for log in receipt.outcome.logs {
+    for log in outcome.logs {
         let json: Value = serde_json::from_str(log.as_str())?;
         println!("type: {:?} args: {:?}",  &json["type"], &json["params"]);
         execute_log(pool, &json["type"], &json["params"]).await;
