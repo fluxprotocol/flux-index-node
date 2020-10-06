@@ -33,6 +33,7 @@ pub async fn db_connect() -> Pool<ConnectionManager<PgConnection>> {
 }
 
 async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>) {
+    eprintln!("listening to blocks");
     let pool = db_connect().await;
 
     eprintln!("listening to blocks");
@@ -41,7 +42,7 @@ async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>
         eprintln!("Block height {:?}", block.block.header.height);
         for tx_res in block.receipt_execution_outcomes {
             let (_, outcome) = tx_res;
-            let outcome = db::continue_if_valid_flux_receipt(outcome);
+            let outcome = db::continue_if_valid_flux_receipt(outcome.execution_outcome);
             if outcome.is_none() { continue; }
             db::process_logs(&pool, outcome.unwrap()).await;
         }
@@ -51,14 +52,19 @@ async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>
 fn main() {
     // We use it to automatically search the for root certificates to perform HTTPS calls
     // (sending telemetry and downloading genesis)
+    eprintln!("doing this");
     openssl_probe::init_ssl_cert_env_vars();
     init_logging();
-
+    eprintln!("doing this");
+    
     let opts: Opts = Opts::parse();
-
+    eprintln!("doing this");
+    
     let home_dir =
-        opts.home_dir.unwrap_or(std::path::PathBuf::from(near_indexer::get_default_home()));
-
+    opts.home_dir.unwrap_or(std::path::PathBuf::from(near_indexer::get_default_home()));
+    eprintln!("doing this");
+    eprintln!("doing this");
+    
     match opts.subcmd {
         SubCommand::Run => {
             let indexer_config = near_indexer::IndexerConfig {
@@ -82,4 +88,5 @@ fn main() {
             config.download_genesis_url.as_ref().map(AsRef::as_ref),
         ),
     }
+    eprintln!("doing this");
 }

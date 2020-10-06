@@ -1,4 +1,5 @@
 const express = require("express");
+
 const router = express.Router();
 
 router.post("/get_affiliate_earnings", (req, res) => {
@@ -76,7 +77,7 @@ router.post("/get_finalized_participated_markets", (req, res) => {
 		SELECT orders.market_id, orders.creator, markets.description FROM orders
 		RIGHT JOIN markets
 		ON orders.market_id = markets.id
-		WHERE orders.creator = $1 AND markets.finalized = true
+		WHERE orders.creator = $1 AND markets.finalized = true AND markets.id NOT IN (SELECT market_id FROM claimed_markets WHERE account_id = $1)
 		GROUP BY orders.market_id, orders.creator, markets.description;
 	`;
 	const values = [body.accountId]

@@ -16,16 +16,16 @@ router.post("/get_avg_price_per_date_metric", (req, res) => {
 		return collector + `date_type_${index}, `
 	}, "")
 
-
 	const query = `
 		SELECT
 			${dateSelection}
+			MAX(extract(epoch from fills.fill_time)) as fill_time,
 			outcome, 
 			SUM(price * amount) / SUM(amount) avg_price
 		FROM fills
 		WHERE (fill_time BETWEEN TO_TIMESTAMP($${body.dateMetrics.length + 1}) AND TO_TIMESTAMP($${body.dateMetrics.length + 2})) AND market_id = $${body.dateMetrics.length + 3}
 		GROUP BY ${groupByDate}outcome
-		ORDER BY ${groupByDate}outcome
+		ORDER BY fill_time, outcome
 		;
 	`;
 	
@@ -36,6 +36,8 @@ router.post("/get_avg_price_per_date_metric", (req, res) => {
 			console.error(error)
 			return res.status(404).json(error)
 		}
+
+
 
 		return res.status(200).json(results.rows);
 	})

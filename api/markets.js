@@ -4,20 +4,32 @@ const router = express.Router();
 router.post("/get", async (req, res) => {
 	const {pool, body} = req;
 
-	let whereString = "";
-	const categoryValues = [] // [categories[0], ...items]
+	let categoriesWhereString = "";
+	const values = [] // [categories[0], ...items]
 	if (body.filter && body.filter.categories) {
-		whereString = body.filter.categories.reduce((collector, item, index) => {
-			categoryValues.push(body.filter.categories[index]);
+		categoriesWhereString = body.filter.categories.reduce((collector, item, index) => {
+			values.push(body.filter.categories[index]);
 			if (index == 0 ) return collector;
 			return collector + ` OR $${index + 1} = ANY (markets.categories)`
 		},  `AND $1 = ANY(markets.categories)`)
 	}
+
+	let marketIdsWhereString = "";
+	if (body.filter && body.filter.marketIds) {
+		marketIdsWhereString = `AND markets.id = ANY ($${values.length + 1})`;
+	}
+	
 	let limit = body.limit || 20;
-	let limitString = `LIMIT $${categoryValues.length + 1}`;
 	let offset =  body.offset || 0;
-	let offsetString = `OFFSET $${categoryValues.length + 2}`
-	const values = categoryValues.concat([limit, offset]);
+
+	if (body.filter.marketIds) {
+		values.push(body.filter.marketIds)
+	}
+
+	const marketValues = [...values, limit, offset];
+
+	let limitString = `LIMIT $${values.length + 1}`;
+	let offsetString = `OFFSET $${values.length + 2}`
 
 	const query = `
 		SELECT 
@@ -28,7 +40,9 @@ router.post("/get", async (req, res) => {
 		FROM markets
 		LEFT JOIN orders
 		ON markets.id = orders.market_id 
-		WHERE markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000) ${whereString && whereString}
+		WHERE markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000) 
+		${categoriesWhereString}
+		${marketIdsWhereString}
 		GROUP BY markets.id
 		ORDER BY volume DESC, markets.id ASC
 		${limitString} ${offsetString};
@@ -38,10 +52,12 @@ router.post("/get", async (req, res) => {
 		SELECT 
 			COUNT(*) total_markets
 		FROM markets
-		WHERE markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000) ${whereString && whereString};
+		WHERE markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000) 
+		${categoriesWhereString && categoriesWhereString}
+		${marketIdsWhereString && marketIdsWhereString};
 	`;
 
-	pool.query(totalQuery, categoryValues, (error, results) => {
+	pool.query(totalQuery, values, (error, results) => {
 		if (error) {
 			console.error(error)
 			return res.status(404).json(error)
@@ -49,7 +65,7 @@ router.post("/get", async (req, res) => {
 
 		const total_markets = results.rows[0] ? results.rows[0].total_markets : 0;
 
-		pool.query(query, values, (error, results) => {
+		pool.query(query, marketValues, (error, results) => {
 			if (error) {
 				console.error(error)
 				return res.status(404).json(error)
@@ -64,22 +80,29 @@ router.post("/get", async (req, res) => {
 router.post("/best_prices", (req, res) => {
 	const {pool, body} = req;
 
-	let whereString = "";
-	const categoryValues = [] // [categories[0], ...items]
+	let categoriesWhereString = "";
+	const values = [] // [categories[0], ...items]
 	if (body.filter && body.filter.categories) {
-		whereString = body.filter.categories.reduce((collector, item, index) => {
-			categoryValues.push(body.filter.categories[index]);
+		categoriesWhereString = body.filter.categories.reduce((collector, item, index) => {
+			values.push(body.filter.categories[index]);
 			if (index == 0 ) return collector;
 			return collector + ` OR $${index + 1} = ANY (markets.categories)`
-		},  `WHERE  $1 = ANY(markets.categories)`)
+		},  `AND $1 = ANY(markets.categories)`)
 	}
 
+	let marketIdsWhereString = "";
+	if (body.filter && body.filter.marketIds) {
+		marketIdsWhereString = `AND markets.id = ANY ($${values.length + 1})`;
+	}
+	
 	let limit = body.limit || 20;
-	let limitString = `LIMIT $${categoryValues.length + 1}`;
 	let offset =  body.offset || 0;
-	let offsetString = `OFFSET $${categoryValues.length + 2}`
-	const values = categoryValues.concat([limit, offset]);
 
+	if (body.filter.marketIds) {
+		values.push(body.filter.marketIds)
+	}
+
+	const marketValues = [...values, limit, offset];
 
 	const query = `
 		SELECT 
@@ -89,7 +112,10 @@ router.post("/best_prices", (req, res) => {
 		FROM orders
 		JOIN (SELECT * from markets ${limitString} ${offsetString}) markets
 		ON orders.market_id = markets.id
-		WHERE orders.closed = false ${whereString && whereString} AND markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000)
+		WHERE orders.closed = false 
+		${categoriesWhereString} 
+		${marketIdsWhereString} 
+		AND markets.end_date_time > to_timestamp(${new Date().getTime()} / 1000)
 		GROUP BY orders.market_id, orders.outcome;
 	`;
 	
@@ -180,12 +206,12 @@ router.post("/get_resoluting", async (req, res) => {
 
 	const query = `
 		SELECT 
-			SUM(orders.filled) as volume,
+			COALESCE(SUM(orders.filled), 0)  as volume,
 			markets.*,
-			extract(epoch from markets.creation_date) as creation_timestamp,
-			extract(epoch from markets.end_date_time) as end_timestamp,
-			MAX(res_win.resolution_state) + 1 as resolution_state,
-			MAX(res_win.resolution_round_end_time) as resolution_round_end_time
+			extract(epoch from markets.creation_date) AS creation_timestamp,
+			extract(epoch from markets.end_date_time) AS end_timestamp,
+			MAX(res_win.resolution_state) + 1 AS resolution_state,
+			MAX(res_win.resolution_round_end_time) AS resolution_round_end_time
 		FROM markets
 		JOIN (
 			SELECT 

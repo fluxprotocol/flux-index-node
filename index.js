@@ -69,7 +69,6 @@ async function connectListener() {
   // await client.query('LISTEN update_markets');
 
   listener.on("notification", message => {
-    console.log("notified")
     handleDBEvent(io, message);
   })
 }

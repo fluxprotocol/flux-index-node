@@ -15,8 +15,8 @@ tokio-diesel = "0.3.0"
 diesel = { version = "1.4.5", features = ["chrono", "postgres", "numeric", "serde_json"] }
 bigdecimal = "0.1.2"
 chrono = "0.4.13"
-near-indexer = { git = "https://github.com/nearprotocol/nearcore", rev="7569a8687bdcb9403c2f836c6d96491754ce20aa" }
-near-store = { git = "https://github.com/nearprotocol/nearcore", rev="7569a8687bdcb9403c2f836c6d96491754ce20aa" }
-near-chain = { git = "https://github.com/nearprotocol/nearcore", rev="7569a8687bdcb9403c2f836c6d96491754ce20aa" }
-neard = { git = "https://github.com/nearprotocol/nearcore", rev="7569a8687bdcb9403c2f836c6d96491754ce20aa" }
-near-chain-configs = { git = "https://github.com/nearprotocol/nearcore", rev="7569a8687bdcb9403c2f836c6d96491754ce20aa" }
+near-indexer = { git = "https://github.com/nearprotocol/nearcore", rev="735e6238b702fe59c3cefe1d8e059bce6997acfd" }
+near-store = { git = "https://github.com/nearprotocol/nearcore", rev="735e6238b702fe59c3cefe1d8e059bce6997acfd" }
+near-chain = { git = "https://github.com/nearprotocol/nearcore", rev="735e6238b702fe59c3cefe1d8e059bce6997acfd" }
+neard = { git = "https://github.com/nearprotocol/nearcore", rev="735e6238b702fe59c3cefe1d8e059bce6997acfd" }
+near-chain-configs = { git = "https://github.com/nearprotocol/nearcore", rev="735e6238b702fe59c3cefe1d8e059bce6997acfd" }
