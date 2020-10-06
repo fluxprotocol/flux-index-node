@@ -33,10 +33,7 @@ pub async fn db_connect() -> Pool<ConnectionManager<PgConnection>> {
 }
 
 async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>) {
-    eprintln!("listening to blocks");
     let pool = db_connect().await;
-
-    eprintln!("listening to blocks");
 
     while let Some(block) = stream.recv().await {
         eprintln!("Block height {:?}", block.block.header.height);
@@ -52,18 +49,13 @@ async fn listen_blocks(mut stream: mpsc::Receiver<near_indexer::StreamerMessage>
 fn main() {
     // We use it to automatically search the for root certificates to perform HTTPS calls
     // (sending telemetry and downloading genesis)
-    eprintln!("doing this");
     openssl_probe::init_ssl_cert_env_vars();
     init_logging();
-    eprintln!("doing this");
     
     let opts: Opts = Opts::parse();
-    eprintln!("doing this");
     
     let home_dir =
     opts.home_dir.unwrap_or(std::path::PathBuf::from(near_indexer::get_default_home()));
-    eprintln!("doing this");
-    eprintln!("doing this");
     
     match opts.subcmd {
         SubCommand::Run => {
